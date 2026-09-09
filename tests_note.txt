@@ -1,0 +1,6 @@
+GET /growth-factors
+GET /growth-factors?growth_coefficient_min=1.06
+GET /growth-factor/1
+GET /growth-factor/1?next=true
+GET /growth-factor-draft
+GET /growth-factor/6 -> 404 (deleted)

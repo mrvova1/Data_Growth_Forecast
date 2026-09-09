@@ -1,0 +1,22 @@
+<nav class="bottom-nav" aria-label="Основная навигация">
+    <a href="/growth-factors" class="nav-item {% if active_tab == 'tile' %}active{% endif %}">
+        <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+        </span>
+        <span>Плитка</span>
+    </a>
+
+    <a href="/growth-factor-draft" class="nav-item {% if active_tab == 'draft' %}active{% endif %}">
+        <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        </span>
+        <span>Добавление</span>
+    </a>
+
+    <a href="/growth-factor/" class="nav-item {% if active_tab == 'feed' %}active{% endif %}">
+        <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M8 4h8l4 4v12H4V4z"/><path d="M8 4v5h8V4M8 13h8M8 17h5"/></svg>
+        </span>
+        <span>Лента</span>
+    </a>
+</nav>

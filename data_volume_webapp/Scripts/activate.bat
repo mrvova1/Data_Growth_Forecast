@@ -8,15 +8,15 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=D:\BMSTU\3\1sem\RIP\FastAPI\data_volume_webapp
+set "VIRTUAL_ENV=D:\BMSTU\RIP\FastAPI\Data_Growth_Forecast\Data_Growth_Forecast\data_volume_webapp"
 
 if not defined PROMPT set PROMPT=$P$G
 
 if defined _OLD_VIRTUAL_PROMPT set PROMPT=%_OLD_VIRTUAL_PROMPT%
 if defined _OLD_VIRTUAL_PYTHONHOME set PYTHONHOME=%_OLD_VIRTUAL_PYTHONHOME%
 
-set _OLD_VIRTUAL_PROMPT=%PROMPT%
-set PROMPT=(data_volume_webapp) %PROMPT%
+if not defined VIRTUAL_ENV_DISABLE_PROMPT set "_OLD_VIRTUAL_PROMPT=%PROMPT%"
+if not defined VIRTUAL_ENV_DISABLE_PROMPT set "PROMPT=(data_volume_webapp) %PROMPT%"
 
 if defined PYTHONHOME set _OLD_VIRTUAL_PYTHONHOME=%PYTHONHOME%
 set PYTHONHOME=
@@ -24,8 +24,8 @@ set PYTHONHOME=
 if defined _OLD_VIRTUAL_PATH set PATH=%_OLD_VIRTUAL_PATH%
 if not defined _OLD_VIRTUAL_PATH set _OLD_VIRTUAL_PATH=%PATH%
 
-set PATH=%VIRTUAL_ENV%\Scripts;%PATH%
-set VIRTUAL_ENV_PROMPT=(data_volume_webapp) 
+set "PATH=%VIRTUAL_ENV%\Scripts;%PATH%"
+set "VIRTUAL_ENV_PROMPT=data_volume_webapp"
 
 :END
 if defined _OLD_CODEPAGE (

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Плитка — Прогноз роста объёма данных</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="phone-shell">
+    <main class="app-screen">
+        <header class="screen-header">
+            <h1>Факторы роста</h1>
+        </header>
+        <p class="screen-subtitle">
+            Факторы, влияющие на рост объёма данных.
+        </p>
+
+        <form class="filter-form" method="get" action="/growth-factors">
+            <label class="range-field">
+                <span>Коэффициент от</span>
+                <input
+                    type="range"
+                    name="growth_coefficient_min"
+                    min="1.00"
+                    max="1.30"
+                    step="0.01"
+                    value="{{ growth_coefficient_min if growth_coefficient_min is not none else '1.00' }}"
+                >
+            </label>
+            <div class="range-summary">
+                {{ '%.2f'|format(growth_coefficient_min if growth_coefficient_min is not none else 1.00) }} — 1.30
+            </div>
+            <button class="filter-button" type="submit">Применить</button>
+        </form>
+
+        <ul class="growth-factor-list">
+            {% for growth_factor in growth_factors %}
+            <li class="growth-factor-card">
+                <a href="/growth-factor/{{ growth_factor.id }}" class="growth-factor-card-link">
+                    <img src="{{ growth_factor.image_url }}" alt="{{ growth_factor.growth_factor_name }}" class="growth-factor-image">
+                    <div class="growth-factor-card-body">
+                        <div class="card-meta">♡ {{ growth_factor.likes_count }}</div>
+                        <h2>{{ growth_factor.growth_factor_name }}</h2>
+                        <div class="growth-factor-stats">
+                            <div class="stat-item">
+                                <span>Коэффициент</span>
+                                <strong>{{ '%.2f'|format(growth_factor.growth_coefficient) }}</strong>
+                            </div>
+                            <div class="stat-item">
+                                <span>Коэффициент объема</span>
+                                <strong>{{ '%.2f'|format(growth_factor.storage_impact_coefficient) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </main>
+
+    {% set active_tab = 'tile' %}
+    {% include 'base_nav.html' %}
+</div>
+</body>
+</html>

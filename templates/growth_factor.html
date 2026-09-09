@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{{ growth_factor.growth_factor_name }} — Прогноз роста объёма данных</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="phone-shell">
+    <main class="feed-screen">
+        <div class="feed-video-card">
+            <video autoplay loop muted playsinline poster="{{ growth_factor.image_url }}">
+                <source src="{{ growth_factor.video_url }}" type="video/mp4">
+                Ваш браузер не поддерживает воспроизведение видео.
+            </video>
+            <div class="feed-gradient" aria-hidden="true"></div>
+
+            <div class="feed-side-actions">
+                <a class="feed-action"
+\                   aria-label="Поставить лайк">
+                    <span class="side-icon">♡</span>
+                    <span>{{ growth_factor.likes_count }}</span>
+                </a>
+                <a class="feed-action next-action"
+                   href="/growth-factor/{{ growth_factor.id }}?next=true"
+                   aria-label="Следующий фактор роста">
+                    <span class="side-icon">›</span>
+                    <span>Следующий</span>
+                </a>
+            </div>
+
+            <div class="feed-caption">
+                <h1>{{ growth_factor.growth_factor_name }}</h1>
+                <div class="topic-stats">
+                    <span>×{{ '%.2f'|format(growth_factor.growth_coefficient) }}</span>
+                    <span>×{{ '%.2f'|format(growth_factor.storage_impact_coefficient) }} объем</span>
+                </div>
+                <details class="description-details">
+                    <summary>
+                        <span class="more-label">Больше</span>
+                        <span class="less-label">Меньше</span>
+                    </summary>
+                    <p>{{ growth_factor.growth_factor_description }}</p>
+                </details>
+            </div>
+        </div>
+    </main>
+
+    {% set active_tab = 'feed' %}
+    {% include 'base_nav.html' %}
+</div>
+</body>
+</html>
