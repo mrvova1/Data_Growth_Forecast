@@ -42,7 +42,10 @@ def _prepare_growth_factor(growth_factor: dict) -> dict:
 def get_growth_factors(
     request: Request,
     growth_coefficient_min: Optional[float] = Query(default=None),
+<<<<<<< HEAD
     growth_coefficient_max: Optional[float] = Query(default=None),
+=======
+>>>>>>> 55a46546d425693ba780364ae29d69cf00a4302d
 ):
     visible_growth_factors = _published_growth_factors()
 
@@ -96,6 +99,11 @@ def get_growth_factor(
     )
 
     displayed_growth_factor = current_growth_factor
+<<<<<<< HEAD
+=======
+    print(len(published_growth_factors))
+    print((current_position + 1))
+>>>>>>> 55a46546d425693ba780364ae29d69cf00a4302d
     if go_next:
         next_position = (current_position + 1) % len(published_growth_factors)
         displayed_growth_factor = published_growth_factors[next_position]
