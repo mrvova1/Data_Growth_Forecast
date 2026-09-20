@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Добавление — Прогноз роста объёма данных</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="phone-shell">
+    <main class="app-screen draft-screen">
+        <header class="screen-header">
+            <h1>Добавление</h1>
+        </header>
+        <form class="growth-factor-form" enctype="multipart/form-data">
+            <fieldset>
+                <legend>Медиа</legend>
+                <img src="{{ growth_factor.image_url }}" alt="{{ growth_factor.growth_factor_name }}">
+
+                <label class="field">
+                    <span>Изображение</span>
+                    <input type="file" name="image_file" accept="image/*">
+                </label>
+                <video autoplay loop muted playsinline poster="{{ growth_factor.image_url }}">
+                    <source src="{{ growth_factor.video_url }}" type="video/mp4">
+                </video>
+                <label class="field">
+                    <span>Видео</span>
+                    <input type="file" name="video_file" accept="video/*">
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Текст</legend>
+                <label class="field">
+                    <span>Название фактора роста</span>
+                    <input type="text" name="growth_factor_name" value="{{ growth_factor.growth_factor_name }}">
+                </label>
+                <label class="field">
+                    <span>Описание фактора роста</span>
+                    <textarea name="growth_factor_description" rows="5">{{ growth_factor.growth_factor_description }}</textarea>
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Значения</legend>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>Коэффициент роста</span>
+                        <input type="number" name="growth_coefficient" step="0.01" value="{{ growth_factor.growth_coefficient }}">
+                    </label>
+                    <label class="field">
+                        <span>Коэффициент объема</span>
+                        <input type="number" name="storage_impact_coefficient" step="0.01" value="{{ growth_factor.storage_impact_coefficient }}">
+                    </label>
+                </div>
+            </fieldset>
+
+            <button class="save-button" type="button" disabled>
+                Сохранить
+            </button>
+        </form>
+    </main>
+
+    {% set active_tab = 'draft' %}
+    {% include 'base_nav.html' %}
+</div>
+</body>
+</html>
