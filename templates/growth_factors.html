@@ -12,46 +12,19 @@
         <header class="screen-header">
             <h1>Факторы роста</h1>
         </header>
-        <p class="screen-subtitle">
-            Факторы, влияющие на рост объёма данных.
-        </p>
 
         <form class="filter-form" method="get" action="/growth-factors">
             <div class="dual-range">
                 <div class="dual-range-values">
-                    <span id="min-value">
-                        {{ '%.2f'|format(growth_coefficient_min if growth_coefficient_min is not none else 1.00) }}
-                    </span>
-                    <span id="max-value">
-                        {{ '%.2f'|format(growth_coefficient_max if growth_coefficient_max is not none else 1.30) }}
-                    </span>
+                    <span id="min-value">{{ '%.2f'|format(growth_coefficient_min if growth_coefficient_min is not none else 1.00) }}</span>
+                    <span id="max-value">{{ '%.2f'|format(growth_coefficient_max if growth_coefficient_max is not none else 1.30) }}</span>
                 </div>
-
                 <div class="dual-range-track">
                     <div class="dual-range-progress" id="range-progress"></div>
-
-                    <input
-                        id="min-range"
-                        type="range"
-                        name="growth_coefficient_min"
-                        min="1.00"
-                        max="1.30"
-                        step="0.01"
-                        value="{{ growth_coefficient_min if growth_coefficient_min is not none else '1.00' }}"
-                    >
-
-                    <input
-                        id="max-range"
-                        type="range"
-                        name="growth_coefficient_max"
-                        min="1.00"
-                        max="1.30"
-                        step="0.01"
-                        value="{{ growth_coefficient_max if growth_coefficient_max is not none else '1.30' }}"
-                    >
+                    <input id="min-range" type="range" name="growth_coefficient_min" min="1.00" max="1.30" step="0.01" value="{{ growth_coefficient_min if growth_coefficient_min is not none else '1.00' }}">
+                    <input id="max-range" type="range" name="growth_coefficient_max" min="1.00" max="1.30" step="0.01" value="{{ growth_coefficient_max if growth_coefficient_max is not none else '1.30' }}">
                 </div>
             </div>
-
             <button class="filter-button" type="submit">Найти</button>
         </form>
 
@@ -69,12 +42,16 @@
                                 <strong>{{ '%.2f'|format(growth_factor.growth_coefficient) }}</strong>
                             </div>
                             <div class="stat-item">
-                                <span>Коэффициент объема</span>
+                                <span>Влияние</span>
                                 <strong>{{ '%.2f'|format(growth_factor.storage_impact_coefficient) }}</strong>
                             </div>
                         </div>
                     </div>
                 </a>
+                <form action="/growth-factor/delete" method="POST" style="padding: 0 11px 11px 11px;">
+                    <input type="hidden" name="growth_factor_id" value="{{ growth_factor.id }}">
+                    <button type="submit" class="delete-btn">Удалить</button>
+                </form>
             </li>
             {% endfor %}
         </ul>

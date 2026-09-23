@@ -1,135 +1,223 @@
+import datetime
 from typing import Optional
-
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Form, status
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
+from sqlalchemy import select, update, func, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.collections import growth_factors_collection
+from db.session import get_db
+from models.user import User
+from models.growth_factor import GrowthFactor
+from models.like import Like
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-def _published_growth_factors():
-    return [
-        growth_factor
-        for growth_factor in growth_factors_collection
-        if growth_factor["growth_factor_status"] == "опубликован"
-    ]
+# DEFAULT_IMAGE = "/static/images/default.png"
+# DEFAULT_VIDEO = "/static/videos/default.mp4"
+# Временно creator_user_id=1
 
+DEFAULT_IMAGE = "http://localhost:9000/media/operations_frequency.png"
+DEFAULT_VIDEO = "http://localhost:9000/media/operations_frequency.mp4"
 
-def _get_published_growth_factor(growth_factor_id: int):
-    growth_factor = next(
-        (
-            item
-            for item in growth_factors_collection
-            if item["id"] == growth_factor_id and item["growth_factor_status"] == "опубликован"
-        ),
-        None,
-    )
-    if growth_factor is None:
-        raise HTTPException(status_code=404, detail="Фактор роста не найден")
+async def _prepare_growth_factor(growth_factor: GrowthFactor, db: AsyncSession) -> GrowthFactor:
+    """Вспомогательный метод для подсчета лайков и настройки медиа-ссылок по умолчанию"""
+    stmt = select(func.count(Like.id)).where(Like.growth_factor_id == growth_factor.id)
+    result = await db.execute(stmt)
+    growth_factor.likes_count = result.scalar_one()
+
+    if not growth_factor.image_key or growth_factor.image_key.strip() == "":
+        growth_factor.image_url = DEFAULT_IMAGE
+    else:
+        growth_factor.image_url = f"http://localhost:9000/media/{growth_factor.image_key}"
+
+    if not growth_factor.video_key or growth_factor.video_key.strip() == "":
+        growth_factor.video_url = DEFAULT_VIDEO
+    else:
+        growth_factor.video_url = f"http://localhost:9000/media/{growth_factor.video_key}"
+
     return growth_factor
-
-
-def _prepare_growth_factor(growth_factor: dict) -> dict:
-    prepared = growth_factor.copy()
-    prepared["likes_count"] = len(prepared["like_user_ids"])
-    prepared["image_url"] = f"http://localhost:9000/media/{prepared['image_key']}"
-    prepared["video_url"] = f"http://localhost:9000/media/{prepared['video_key']}"
-    return prepared
 
 @router.get("/")
 @router.get("/growth-factors")
-def get_growth_factors(
+async def get_growth_factors(
     request: Request,
+    db: AsyncSession = Depends(get_db),
     growth_coefficient_min: Optional[float] = Query(default=None),
-<<<<<<< HEAD
     growth_coefficient_max: Optional[float] = Query(default=None),
-=======
->>>>>>> 55a46546d425693ba780364ae29d69cf00a4302d
 ):
-    visible_growth_factors = _published_growth_factors()
+    stmt = select(GrowthFactor).where(GrowthFactor.growth_factor_status == "опубликован")
 
     if growth_coefficient_min is not None:
-        visible_growth_factors = [
-            growth_factor
-            for growth_factor in visible_growth_factors
-            if growth_factor["growth_coefficient"] >= growth_coefficient_min
-        ]
-
+        stmt = stmt.where(GrowthFactor.growth_coefficient >= growth_coefficient_min)
     if growth_coefficient_max is not None:
-        visible_growth_factors = [
-            growth_factor
-            for growth_factor in visible_growth_factors
-            if growth_factor["growth_coefficient"] <= growth_coefficient_max
-        ]
+        stmt = stmt.where(GrowthFactor.growth_coefficient <= growth_coefficient_max)
+
+    stmt = stmt.order_by(GrowthFactor.id.asc())
+    result = await db.execute(stmt)
+    visible_growth_factors = result.scalars().all()
+
+    prepared_list = []
+    for gf in visible_growth_factors:
+        prepared_list.append(await _prepare_growth_factor(gf, db))
 
     return templates.TemplateResponse(
         request=request,
         name="growth_factors.html",
         context={
-            "growth_factors": [
-                _prepare_growth_factor(growth_factor)
-                for growth_factor in visible_growth_factors
-            ],
+            "growth_factors": prepared_list,
             "growth_coefficient_min": growth_coefficient_min,
             "growth_coefficient_max": growth_coefficient_max,
         },
     )
 
+
 @router.get("/growth-factor/{growth_factor_id:int}")
 @router.get("/growth-factor/")
-def get_growth_factor(
+async def get_growth_factor(
     request: Request,
+    db: AsyncSession = Depends(get_db),
     growth_factor_id: Optional[int] = None,
     go_next: bool = Query(default=False, alias="next"),
 ):
     if not growth_factor_id:
-        published_growth_factors = _published_growth_factors()
-        if not published_growth_factors:
+        stmt = select(GrowthFactor).where(GrowthFactor.growth_factor_status == "опубликован").limit(1)
+        res = await db.execute(stmt)
+        current_gf = res.scalar_one_or_none()
+        if not current_gf:
             raise HTTPException(status_code=404, detail="Опубликованные факторы роста не найдены")
-        growth_factor_id = published_growth_factors[0]["id"]
+        growth_factor_id = current_gf.id
 
-    current_growth_factor = _get_published_growth_factor(growth_factor_id)
-
-    published_growth_factors = _published_growth_factors()
-    current_position = next(
-        index
-        for index, item in enumerate(published_growth_factors)
-        if item["id"] == current_growth_factor["id"]
-    )
-
-    displayed_growth_factor = current_growth_factor
-<<<<<<< HEAD
-=======
-    print(len(published_growth_factors))
-    print((current_position + 1))
->>>>>>> 55a46546d425693ba780364ae29d69cf00a4302d
     if go_next:
-        next_position = (current_position + 1) % len(published_growth_factors)
-        displayed_growth_factor = published_growth_factors[next_position]
+        stmt_next = (
+            select(GrowthFactor)
+            .where(GrowthFactor.growth_factor_status == "опубликован")
+            .where(GrowthFactor.id > growth_factor_id)
+            .order_by(GrowthFactor.id.asc())
+            .limit(1)
+        )
+        res_next = await db.execute(stmt_next)
+        displayed_growth_factor = res_next.scalar_one_or_none()
+
+        if not displayed_growth_factor:
+            stmt_first = (
+                select(GrowthFactor)
+                .where(GrowthFactor.growth_factor_status == "опубликован")
+                .order_by(GrowthFactor.id.asc())
+                .limit(1)
+            )
+            res_first = await db.execute(stmt_first)
+            displayed_growth_factor = res_first.scalar_one_or_none()
+    else:
+        stmt_curr = select(GrowthFactor).where(GrowthFactor.id == growth_factor_id)
+        res_curr = await db.execute(stmt_curr)
+        displayed_growth_factor = res_curr.scalar_one_or_none()
+
+    if not displayed_growth_factor or displayed_growth_factor.growth_factor_status == "удален":
+        raise HTTPException(status_code=404, detail="Фактор роста не найден или удален")
+
+    await _prepare_growth_factor(displayed_growth_factor, db)
 
     return templates.TemplateResponse(
         request=request,
         name="growth_factor.html",
-        context={"growth_factor": _prepare_growth_factor(displayed_growth_factor)},
+        context={"growth_factor": displayed_growth_factor},
     )
 
 
 @router.get("/growth-factor-draft")
-def get_growth_factor_draft(request: Request):
-    draft_growth_factor = next(
-        (
-            item
-            for item in growth_factors_collection
-            if item["growth_factor_status"] == "черновик"
-        ),
-        None,
-    )
-    if draft_growth_factor is None:
-        raise HTTPException(status_code=404, detail="Черновик фактора роста не найден")
+async def get_growth_factor_draft(request: Request, db: AsyncSession = Depends(get_db)):
+    stmt = select(GrowthFactor).where(
+        GrowthFactor.growth_factor_status == "черновик",
+        GrowthFactor.creator_user_id == 1
+    ).limit(1)
+
+    result = await db.execute(stmt)
+    draft_growth_factor = result.scalar_one_or_none()
+
+    if draft_growth_factor:
+        await _prepare_growth_factor(draft_growth_factor, db)
+        return templates.TemplateResponse(
+            request=request,
+            name="growth_factor_draft.html",
+            context={"growth_factor": draft_growth_factor, "is_exist": True},
+        )
 
     return templates.TemplateResponse(
         request=request,
         name="growth_factor_draft.html",
-        context={"growth_factor": _prepare_growth_factor(draft_growth_factor)},
+        context={"growth_factor": None, "is_exist": False},
     )
+
+
+@router.post("/growth-factor/create")
+async def create_growth_factor_post(
+    growth_factor_name: str = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(GrowthFactor).where(
+        GrowthFactor.growth_factor_status == "черновик",
+        GrowthFactor.creator_user_id == 1
+    )
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
+        return RedirectResponse(url="/growth-factor-draft", status_code=status.HTTP_303_SEE_OTHER)
+
+    new_draft = GrowthFactor(
+        growth_factor_name=growth_factor_name,
+        growth_factor_status="черновик",
+        created_at=datetime.datetime.now(),
+        creator_user_id=1,
+        image_key="",
+        video_key=""
+    )
+    db.add(new_draft)
+    await db.commit()
+
+    return RedirectResponse(url="/growth-factor-draft", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/growth-factor/publish")
+async def publish_growth_factor_post(
+    growth_factor_description: str = Form(...),
+    growth_coefficient: float = Form(...),
+    storage_impact_coefficient: float = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(GrowthFactor).where(
+        GrowthFactor.growth_factor_status == "черновик",
+        GrowthFactor.creator_user_id == 1
+    )
+    result = await db.execute(stmt)
+    draft = result.scalar_one_or_none()
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Черновик для публикации не найден")
+
+    draft.growth_factor_description = growth_factor_description
+    draft.growth_coefficient = growth_coefficient
+    draft.storage_impact_coefficient = storage_impact_coefficient
+    draft.growth_factor_status = "опубликован"
+    draft.formed_at = datetime.datetime.now()
+
+    await db.commit()
+    return RedirectResponse(url="/growth-factors", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/growth-factor/delete")
+async def delete_growth_factor_post(
+    growth_factor_id: int = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+
+    sql_query = text(
+        "UPDATE growth_factors "
+        "SET growth_factor_status = 'удален' "
+        "WHERE id = :gf_id"
+    )
+
+    await db.execute(sql_query, {"gf_id": growth_factor_id})
+    await db.commit()
+
+    return RedirectResponse(url="/growth-factors", status_code=status.HTTP_303_SEE_OTHER)

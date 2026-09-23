@@ -1,0 +1,15 @@
+(data_volume_webapp) D:\BMSTU\3\1sem\RIP\Data_Growth_Forecast>docker ps
+CONTAINER ID   IMAGE                COMMAND                  CREATED      STATUS         PORTS                                         NAMES
+1e6753bcdc46   adminer:latest       "entrypoint.sh docke…"   2 days ago   Up 3 minutes   0.0.0.0:8081->8080/tcp, [::]:8081->8080/tcp   data_growth_forecast-adminer-1
+68f454977682   postgres:15-alpine   "docker-entrypoint.s…"   2 days ago   Up 3 minutes   5432/tcp                                      data_growth_forecast-postgres-1
+
+(data_volume_webapp) D:\BMSTU\3\1sem\RIP\Data_Growth_Forecast>docker-compose down
+[+] down 3/3
+ ✔ Container data_growth_forecast-adminer-1  Removed                                                                                                                                0.3s ✔ Container data_growth_forecast-postgres-1 Removed                                                                                                                                0.1s ✔ Network data_growth_forecast_default      Removed                                                                                                                                0.3s
+(data_volume_webapp) D:\BMSTU\3\1sem\RIP\Data_Growth_Forecast>docker-compose up -d
+[+] up 3/3
+ ✔ Network data_growth_forecast_default      Created                                                                                                                                0.0s ✔ Container data_growth_forecast-postgres-1 Created                                                                                                                                0.1s ✔ Container data_growth_forecast-adminer-1  Created                                                                                                                                0.1s
+(data_volume_webapp) D:\BMSTU\3\1sem\RIP\Data_Growth_Forecast>docker ps           
+CONTAINER ID   IMAGE                COMMAND                  CREATED         STATUS         PORTS                                         NAMES
+cc5dee0038ef   adminer:latest       "entrypoint.sh docke…"   7 seconds ago   Up 7 seconds   0.0.0.0:8081->8080/tcp, [::]:8081->8080/tcp   data_growth_forecast-adminer-1
+84e4f9becb21   postgres:15-alpine   "docker-entrypoint.s…"   7 seconds ago   Up 7 seconds   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp   data_growth_forecast-postgres-1

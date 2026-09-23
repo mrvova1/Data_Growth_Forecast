@@ -97,9 +97,13 @@ button, input, textarea { font: inherit; }
     border-width: 2px;
     border-style: solid;
     border-color: var(--silver);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Прижимает форму удаления к самому низу */
 }
 .growth-factor-card:hover { transform: translateY(-4px); }
-.growth-factor-card-link { display: block; height: 100%; }
+.growth-factor-card-link { display: block; height: 100%;  flex-grow: 1; }
 .growth-factor-image { width: 100%; aspect-ratio: 1 / .96; object-fit: cover; background: var(--silver); }
 .growth-factor-card-body { padding: 11px; color: var(--sand); }
 .card-meta { margin-bottom: 7px; color: var(--silver); font-size: 10px; font-weight: 700; }
@@ -230,3 +234,30 @@ button, input, textarea { font: inherit; }
     cursor: default;
     opacity: .65;
 }
+
+.action-button {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid var(--silver);
+            border-radius: 10px;
+            background: var(--sand);
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+.action-button:hover { opacity: 0.9; }
+
+.delete-btn {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-top: 8px;
+            width: 100%;
+            font-weight: bold;
+        }
+.delete-btn:hover { background-color: #ff3333; }
