@@ -14,12 +14,12 @@ from models.like import Like
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-# DEFAULT_IMAGE = "/static/images/default.png"
-# DEFAULT_VIDEO = "/static/videos/default.mp4"
+DEFAULT_IMAGE = "/static/images/default.png"
+DEFAULT_VIDEO = "/static/videos/default.mp4"
 # Временно creator_user_id=1
 
-DEFAULT_IMAGE = "http://localhost:9000/media/operations_frequency.png"
-DEFAULT_VIDEO = "http://localhost:9000/media/operations_frequency.mp4"
+# DEFAULT_IMAGE = "http://localhost:9000/media/operations_frequency.png"
+# DEFAULT_VIDEO = "http://localhost:9000/media/operations_frequency.mp4"
 
 async def _prepare_growth_factor(growth_factor: GrowthFactor, db: AsyncSession) -> GrowthFactor:
     """Вспомогательный метод для подсчета лайков и настройки медиа-ссылок по умолчанию"""

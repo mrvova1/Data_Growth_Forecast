@@ -17,16 +17,14 @@
         <form class="growth-factor-form" action="/growth-factor/create" method="POST">
             <fieldset>
                 <legend>Медиа</legend>
-                <img src="{{ growth_factor.image_url }}" alt="{{ growth_factor.growth_factor_name }}">
-                {% comment %} <img src="{% if growth_factor and growth_factor.image_url %}{{ growth_factor.image_url }}{% else %}/static/images/default.png{% endif %}"> {% endcomment %}
+                <img src="{% if growth_factor and growth_factor.image_url %}{{ growth_factor.image_url }}{% else %}/static/images/default.png{% endif %}">
 
                 <label class="field">
                     <span>Изображение</span>
                     <input type="file" name="image_file" accept="image/*">
                 </label>
-                <video autoplay loop muted playsinline poster="{{ growth_factor.image_url }}">
-                    <source src="{{ growth_factor.video_url }}" type="video/mp4">
-                    {% comment %} <source src="{% if growth_factor and growth_factor.video_url %}{{ growth_factor.video_url }}{% else %}/static/videos/default.mp4{% endif %}" type="video/mp4"> {% endcomment %}
+                <video autoplay loop muted playsinline poster="{% if growth_factor and growth_factor.image_url %}{{ growth_factor.image_url }}{% else %}/static/images/default.png{% endif %}">
+                    <source src="{% if growth_factor and growth_factor.video_url %}{{ growth_factor.video_url }}{% else %}/static/videos/default.mp4{% endif %}" type="video/mp4">
                 </video>
                 <label class="field">
                     <span>Видео</span>

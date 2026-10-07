@@ -249,8 +249,8 @@ button, input, textarea { font: inherit; }
 .action-button:hover { opacity: 0.9; }
 
 .delete-btn {
-            background-color: #ff4d4d;
-            color: white;
+            background-color: var(--sand);
+            color: var(--ink);
             border: none;
             border-radius: 8px;
             padding: 5px 10px;
@@ -260,4 +260,4 @@ button, input, textarea { font: inherit; }
             width: 100%;
             font-weight: bold;
         }
-.delete-btn:hover { background-color: #ff3333; }
+.delete-btn:hover { background-color: var(--ink); color: var(--sand); }
