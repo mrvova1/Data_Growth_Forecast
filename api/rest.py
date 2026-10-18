@@ -29,21 +29,19 @@ UTC_NOW = lambda: datetime.now(timezone.utc).replace(tzinfo=None)
 
 def _validate_image(upload: UploadFile) -> None:
     if not upload.filename:
-        raise HTTPException(status_code=400, detail="image_file: файл не выбран")
+        raise HTTPException(status_code=400)
     if not upload.content_type or not upload.content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="image_file должен быть изображением",
         )
 
 
 def _validate_video(upload: UploadFile) -> None:
     if not upload.filename:
-        raise HTTPException(status_code=400, detail="video_file: файл не выбран")
+        raise HTTPException(status_code=400)
     if not upload.content_type or not upload.content_type.startswith("video/"):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="video_file должен быть видео",
         )
 
 
@@ -112,7 +110,6 @@ async def list_services(
     ):
         raise HTTPException(
             status_code=400,
-            detail="Минимальный коэффициент не может быть больше максимального",
         )
 
     stmt = (
@@ -144,7 +141,7 @@ async def create_service(
 ):
     growth_factor_name = growth_factor_name.strip()
     if not growth_factor_name:
-        raise HTTPException(status_code=400, detail="Название услуги не должно быть пустым")
+        raise HTTPException(status_code=400)
 
     _validate_image(image_file)
     _validate_video(video_file)
@@ -160,7 +157,6 @@ async def create_service(
     if existing_draft_id is not None:
         raise HTTPException(
             status_code=409,
-            detail="У текущего пользователя уже есть черновик",
         )
 
     image_key = None
@@ -189,7 +185,7 @@ async def create_service(
         await db.rollback()
         delete_object(video_key)
         delete_object(image_key)
-        raise HTTPException(status_code=502, detail="Не удалось сохранить файлы/услугу") from exc
+        raise HTTPException(status_code=502) from exc
     finally:
         await image_file.close()
         await video_file.close()
@@ -213,7 +209,7 @@ async def get_draft(
     ).scalar_one_or_none()
 
     if draft is None:
-        raise HTTPException(status_code=404, detail="Черновик не найден")
+        raise HTTPException(status_code=404)
 
     return _draft_out(draft)
 
@@ -237,7 +233,7 @@ async def publish_draft(
     ).scalar_one_or_none()
 
     if draft is None:
-        raise HTTPException(status_code=404, detail="Черновик не найден")
+        raise HTTPException(status_code=404)
 
     # Единственный разрешенный переход в ЛР3: черновик -> опубликован.
     draft.growth_factor_description = payload.growth_factor_description
@@ -266,7 +262,7 @@ async def get_feed_first(
     ).scalar_one_or_none()
 
     if first is None:
-        raise HTTPException(status_code=404, detail="Опубликованные услуги не найдены")
+        raise HTTPException(status_code=404)
 
     return await _service_out(first, db, user)
 
@@ -279,7 +275,7 @@ async def get_feed_by_id(
     user: CurrentUser = Depends(get_current_user),
 ):
     if service_id <= 0:
-        raise HTTPException(status_code=400, detail="id должен быть положительным")
+        raise HTTPException(status_code=400)
 
     if next:
         current = (
@@ -314,7 +310,7 @@ async def get_feed_by_id(
         ).scalar_one_or_none()
 
     if current is None:
-        raise HTTPException(status_code=404, detail="Услуга не найдена")
+        raise HTTPException(status_code=404)
 
     return await _service_out(current, db, user)
 
@@ -336,7 +332,7 @@ async def set_like(
     ).scalar_one_or_none()
 
     if service is None:
-        raise HTTPException(status_code=404, detail="Опубликованная услуга не найдена")
+        raise HTTPException(status_code=404)
 
     existing = (
         await db.execute(
@@ -386,7 +382,7 @@ async def delete_service(
     service = await db.get(GrowthFactor, service_id)
 
     if service is None or service.creator_user_id != user.id:
-        raise HTTPException(status_code=404, detail="Услуга текущего пользователя не найдена")
+        raise HTTPException(status_code=404)
 
     # DELETE = soft delete. Строка остается в БД.
     if service.growth_factor_status != "удален":
@@ -408,7 +404,7 @@ async def register_user(
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
-        raise HTTPException(status_code=409, detail="Пользователь уже существует") from exc
+        raise HTTPException(status_code=409) from exc
 
     await db.refresh(user)
     return UserOut(id=user.id, username=user.username)

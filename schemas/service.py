@@ -9,7 +9,6 @@ class ServiceOut(BaseModel):
     id: int
     growth_factor_name: str
     growth_factor_description: str | None = None
-    growth_factor_status: str
 
     image_url: str | None = None
     video_url: str | None = None
@@ -29,7 +28,6 @@ class DraftOut(BaseModel):
     id: int
     growth_factor_name: str
     growth_factor_description: str | None = None
-    growth_factor_status: str
 
     image_url: str | None = None
     video_url: str | None = None
