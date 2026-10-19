@@ -2,7 +2,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
 class ServiceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -70,21 +69,20 @@ class LikeIn(BaseModel):
 
 
 class UserRegisterIn(BaseModel):
-    username: str = Field(
-        min_length=3,
-        max_length=50
-    )
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6, max_length=128)
 
     @field_validator("username")
     @classmethod
-    def validate_username(cls, value: str) -> str:
-        value = value.strip()
-
-        if not value:
+    def strip_username(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
             raise ValueError("Логин не должен быть пустым")
+        return v
 
-        return value
-
+class UserLoginIn(BaseModel):
+    username: str
+    password: str
 
 class UserOut(BaseModel):
     id: int

@@ -2,10 +2,9 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.deps import CurrentUser, get_current_user
+from api.deps_auth import get_current_user, get_current_user_optional
 from db.session import get_db
 from models.growth_factor import GrowthFactor
 from models.like import Like
@@ -15,14 +14,10 @@ from schemas.service import (
     LikeIn,
     PublishIn,
     ServiceOut,
-    UserOut,
-    UserRegisterIn,
 )
 from services.minio_storage import delete_object, public_url, put_upload
 
-
 router = APIRouter(tags=["REST API"])
-
 
 UTC_NOW = lambda: datetime.now(timezone.utc).replace(tzinfo=None)
 
@@ -48,7 +43,7 @@ def _validate_video(upload: UploadFile) -> None:
 async def _service_out(
     gf: GrowthFactor,
     db: AsyncSession,
-    user: CurrentUser,
+    user: User | None,
 ) -> ServiceOut:
     likes_count = (
         await db.scalar(
@@ -56,14 +51,20 @@ async def _service_out(
         )
     ) or 0
 
-    liked = await db.scalar(
-        select(Like.id)
-        .where(
-            Like.growth_factor_id == gf.id,
-            Like.user_id == user.id,
+    liked = None
+    if user is not None:
+        liked = await db.scalar(
+            select(Like.id)
+            .where(
+                Like.growth_factor_id == gf.id,
+                Like.user_id == user.id,
+            )
+            .limit(1)
         )
-        .limit(1)
-    )
+
+    is_creator = 0
+    if user is not None and gf.creator_user_id == user.id:
+        is_creator = 1
 
     return ServiceOut(
         id=gf.id,
@@ -77,7 +78,7 @@ async def _service_out(
         created_at=gf.created_at,
         formed_at=gf.formed_at,
         likes_count=int(likes_count),
-        is_creator=int(gf.creator_user_id == user.id),
+        is_creator=is_creator,
         is_liked=int(liked is not None),
     )
 
@@ -101,16 +102,14 @@ async def list_services(
     growth_coefficient_min: float | None = Query(default=None),
     growth_coefficient_max: float | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user),
+    user: User | None = Depends(get_current_user_optional),
 ):
     if (
         growth_coefficient_min is not None
         and growth_coefficient_max is not None
         and growth_coefficient_min > growth_coefficient_max
     ):
-        raise HTTPException(
-            status_code=400,
-        )
+        raise HTTPException(status_code=400)
 
     stmt = (
         select(GrowthFactor)
@@ -137,7 +136,7 @@ async def create_service(
     image_file: UploadFile = File(...),
     video_file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     growth_factor_name = growth_factor_name.strip()
     if not growth_factor_name:
@@ -150,14 +149,12 @@ async def create_service(
         select(GrowthFactor.id)
         .where(
             GrowthFactor.growth_factor_status == "черновик",
-            GrowthFactor.creator_user_id == user.id,
+            GrowthFactor.creator_user_id == current_user.id,
         )
         .limit(1)
     )
     if existing_draft_id is not None:
-        raise HTTPException(
-            status_code=409,
-        )
+        raise HTTPException(status_code=409)
 
     image_key = None
     video_key = None
@@ -174,7 +171,7 @@ async def create_service(
             growth_coefficient=None,
             storage_impact_coefficient=None,
             created_at=UTC_NOW(),
-            creator_user_id=user.id,
+            creator_user_id=current_user.id,
             formed_at=None,
         )
         db.add(draft)
@@ -194,14 +191,14 @@ async def create_service(
 @router.get("/services/draft", response_model=DraftOut)
 async def get_draft(
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     draft = (
         await db.execute(
             select(GrowthFactor)
             .where(
                 GrowthFactor.growth_factor_status == "черновик",
-                GrowthFactor.creator_user_id == user.id,
+                GrowthFactor.creator_user_id == current_user.id,
             )
             .order_by(GrowthFactor.id.asc())
             .limit(1)
@@ -218,14 +215,14 @@ async def get_draft(
 async def publish_draft(
     payload: PublishIn,
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     draft = (
         await db.execute(
             select(GrowthFactor)
             .where(
                 GrowthFactor.growth_factor_status == "черновик",
-                GrowthFactor.creator_user_id == user.id,
+                GrowthFactor.creator_user_id == current_user.id,
             )
             .order_by(GrowthFactor.id.asc())
             .limit(1)
@@ -235,7 +232,6 @@ async def publish_draft(
     if draft is None:
         raise HTTPException(status_code=404)
 
-    # Единственный разрешенный переход в ЛР3: черновик -> опубликован.
     draft.growth_factor_description = payload.growth_factor_description
     draft.growth_coefficient = payload.growth_coefficient
     draft.storage_impact_coefficient = payload.storage_impact_coefficient
@@ -244,13 +240,13 @@ async def publish_draft(
 
     await db.commit()
     await db.refresh(draft)
-    return await _service_out(draft, db, user)
+    return await _service_out(draft, db, current_user)
 
 
 @router.get("/services/feed", response_model=ServiceOut)
 async def get_feed_first(
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user),
+    user: User | None = Depends(get_current_user_optional),
 ):
     first = (
         await db.execute(
@@ -272,7 +268,7 @@ async def get_feed_by_id(
     service_id: int,
     next: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user),
+    user: User | None = Depends(get_current_user_optional),
 ):
     if service_id <= 0:
         raise HTTPException(status_code=400)
@@ -320,7 +316,7 @@ async def set_like(
     service_id: int,
     payload: LikeIn,
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     service = (
         await db.execute(
@@ -338,7 +334,7 @@ async def set_like(
         await db.execute(
             select(Like)
             .where(
-                Like.user_id == user.id,
+                Like.user_id == current_user.id,
                 Like.growth_factor_id == service_id,
             )
             .limit(1)
@@ -346,7 +342,7 @@ async def set_like(
     ).scalar_one_or_none()
 
     if payload.like == 1 and existing is None:
-        db.add(Like(user_id=user.id, growth_factor_id=service_id))
+        db.add(Like(user_id=current_user.id, growth_factor_id=service_id))
     elif payload.like == 0 and existing is not None:
         await db.delete(existing)
 
@@ -355,7 +351,7 @@ async def set_like(
     is_liked = (
         await db.scalar(
             select(Like.id).where(
-                Like.user_id == user.id,
+                Like.user_id == current_user.id,
                 Like.growth_factor_id == service_id,
             )
         )
@@ -377,44 +373,15 @@ async def set_like(
 async def delete_service(
     service_id: int,
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     service = await db.get(GrowthFactor, service_id)
 
-    if service is None or service.creator_user_id != user.id:
+    if service is None or service.creator_user_id != current_user.id:
         raise HTTPException(status_code=404)
 
-    # DELETE = soft delete. Строка остается в БД.
     if service.growth_factor_status != "удален":
         service.growth_factor_status = "удален"
         await db.commit()
 
     return None
-
-
-@router.post("/users/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def register_user(
-    payload: UserRegisterIn,
-    db: AsyncSession = Depends(get_db),
-):
-    user = User(username=payload.username)
-    db.add(user)
-
-    try:
-        await db.commit()
-    except IntegrityError as exc:
-        await db.rollback()
-        raise HTTPException(status_code=409) from exc
-
-    await db.refresh(user)
-    return UserOut(id=user.id, username=user.username)
-
-
-@router.post("/users/auth")
-async def authenticate_stub():
-    return {"message": "Заглушка аутентификации для лабораторной №4"}
-
-
-@router.post("/users/logout")
-async def logout_stub():
-    return {"message": "Заглушка деавторизации для лабораторной №4"}

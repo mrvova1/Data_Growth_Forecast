@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     MINIO_USE_SSL: bool = False
     MINIO_PUBLIC_BASE_URL: str = "http://localhost:9000"
 
+    REDIS_URL: str = "redis://localhost:6379/0"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
